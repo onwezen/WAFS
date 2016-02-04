@@ -21,15 +21,17 @@
 
 	var sections = {
 		toggle: function(route) {
-			var screens = document.querySelectorAll('body > section')
-			for (var i = 0; i < screens.length; i++) {
-				screens[i].style.display = 'none';
-			};
-
+			this.hideScreens();
 			var show = document.querySelector(route);
 			show.style.display = '';
 
 			this.navigation(route);
+		},
+		hideScreens: function(){
+			var screens = document.querySelectorAll('body > section')
+			for (var i = 0; i < screens.length; i++) {
+				screens[i].style.display = 'none';
+			};
 		},
 		navigation: function(route) {
 			var ahref = document.querySelectorAll('.menu-button a');
