@@ -20,10 +20,7 @@
 			var hash = window.location.hash;
 
 			if (hash) {
-				var screens = document.querySelectorAll('body > section');
-				for (var i = 0; i < screens.length; i++) {
-					screens[i].style.display = 'none';
-				};
+				sections.hideScreens();
 
 				var show = document.querySelector(hash);
 				show.style.display = '';
@@ -32,6 +29,12 @@
 			};
 			
 			sections.navigation();
+		},
+		hideScreens(){
+		 	var screens = document.querySelectorAll('body > section');
+			for (var i = 0; i < screens.length; i++) {
+				screens[i].style.display = 'none';
+			};	
 		},
 		navigation: function() {
 			var hash = window.location.hash;
