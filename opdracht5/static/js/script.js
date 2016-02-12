@@ -248,6 +248,7 @@
 				this.detailObject = object;
 				this.render();
 			}.bind(this))
+			//Geen alert maar liever console log ofzo en een displayed message. Catch beste methode?
 			.catch(function() {
 				alert('Something went wrong')
 			});		
