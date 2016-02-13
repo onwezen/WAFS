@@ -8,6 +8,7 @@
 			el.init();
 			states.init();
 			search.init();
+			watchlist.getStorage();
 		}
 	};
 
@@ -20,6 +21,7 @@
 			this.navSearch = document.getElementById('nav-search');
 			this.navWatchlist = document.getElementById('nav-watchlist');
 			this.list = document.getElementById('list');
+			this.listWatchlist = document.getElementById('list-watchlist');
 			this.form = document.getElementById('form');
 			this.submitButton = document.getElementById('submit');
 			this.searchvalue = document.getElementById('searchvalue');
@@ -176,13 +178,11 @@
 			var titleArray = _.map(this.searchResults.Search, function (value) {
 			    return value.Title
 			});
-			console.log(titleArray)
 
 			// Returns all titles as a string
 			var titleString = _.reduce(this.searchResults.Search, function (str, movie) {
 			    return movie.Title + str;
 			}, '');
-			console.log(titleString)
 
 			// Filter out all the movies without an image
 			var goodImages = _.filter(this.searchResults.Search, function(out){ 
@@ -199,7 +199,7 @@
 			var title = function() {return this.Title}
 			var img = function() {return this.Poster}
 			var year = function() {return this.Year}
-			var checkboxId = function() {return 'checboxSearch-'+this.imdbID}
+			var checkboxId = function() {return 'checkboxSearch-'+this.imdbID}
 
 			// Object to let Transparency know what values to give which element
 			var directives = {
@@ -208,25 +208,39 @@
 			  img: {src: img},
 			  title: {text: title},
 			  year: {text: year},
-			  checkbox: {id: checkboxId},
+			  checkbox: {id: checkboxId, value: valueId},
 			  label: {for: checkboxId}
 			};
 
 			// Render
 			Transparency.render(el.list, this.searchResults, directives);
+
+			// Link the object to the right checkbox, so we can get the object when we click it
+			var results = el.list.children;
+			for (var i = 0; i < results.length; i++) {
+				var data = this.searchResults[i];
+				results[i].querySelector('input[type="checkbox"]').data = data;
+			};
+
+			// There are new checkboxes, so fire watchlist.init
+			watchlist.init();
 		}
 	}
 
+	// Detail state object
 	var detail = {
+		// The object with the detailed data
 		detailObject: [],
 		apiCall: function(id) {
+			// Declare new Promise function
 			var promise = new Promise(function (resolve, reject) {
 				var xhr = new XMLHttpRequest();
 
+				// When it starts getting data, show the loader
 				xhr.onloadstart = function() {
 					search.loading('show', el.detailScreen);
 				}
-
+				// When its done getting the data, hide the loader
 				xhr.onloadend = function() {
 					search.loading('hide', el.detailScreen);
 				}
@@ -234,6 +248,7 @@
 				xhr.open('GET', 'http://www.omdbapi.com/?i='+id+'&r=json&plot=full', true);
 				xhr.send(null);
 
+				// When data is ready, resolve the object
 				xhr.onreadystatechange = function() {
 				    if (xhr.readyState == 4) {
 				        var json = JSON.parse(xhr.responseText);
@@ -244,11 +259,13 @@
 			return promise;
 		},
 		pushToArray: function(id) {
+			// Fire apiCall. When the data is succesfully received, object = searchResults. Then render and display the list
 			this.apiCall(id).then(function (object) {
 				this.detailObject = object;
 				this.render();
 			}.bind(this))
 			.catch(function() {
+				// If an error occurred, alert there is something wrong
 				alert('Something went wrong')
 			});		
 		},
@@ -258,7 +275,7 @@
 			var title = function() {return this.Title}
 			var img = function() {return this.Poster}
 			var year = function() {return this.Year}
-			var checkboxId = function() {return 'checboxDetail-'+this.imdbID}
+			var checkboxId = function() {return 'checkboxDetail-'+this.imdbID}
 			var rating = function() {return 'IMDb: '+this.imdbRating}
 			var actors = function() {return this.Actors}
 			var description = function() {return this.Plot}
@@ -277,6 +294,109 @@
 
 			// Render
 			Transparency.render(el.detailScreen, this.detailObject, directives);
+
+			// Link the object to the right checkbox, so we can get the object when we click it
+			el.detailScreen.querySelector('input[type="checkbox"]').data = this.detailObject;
+			
+			// There are new checkboxes, so fire watchlist.init
+			watchlist.init();
+		}
+	}
+
+	var watchlist = {
+		watchlist: [],
+		init: function() {
+			// Add click events to all checkboxes
+			var checkboxes = document.querySelectorAll('input[type="checkbox"]');
+			for (var i = 0; i < checkboxes.length; i++) {
+				checkboxes[i].addEventListener("click", this.pushToArray)
+			};
+			// Fire checkSync
+			this.checkSync();		
+		},
+		getStorage: function() {
+			// Check if an object is saved in local storage
+			var storage = JSON.parse(localStorage.getItem('watchlist'));
+			if (storage) {
+				// If the object exists, render the watchlist
+				this.watchlist = storage;
+				this.render();
+			}
+		},
+		pushToArray: function() {
+			// Check if the checkbox is checked
+			if (this.checked) {
+				// If checked, push to array
+				watchlist.watchlist.push(this.data);
+			} else {
+				// If not checked, go through the watchlist and check what object is matching the clicked checkbox
+				for (var i = 0; i < watchlist.watchlist.length; i++) {
+					if(watchlist.watchlist[i].imdbID == this.data.imdbID) {
+						// Delete the object from the array
+						// Source: http://stackoverflow.com/questions/5767325/remove-a-particular-element-from-an-array-in-javascript
+						var remove = watchlist.watchlist[i];
+						var index = watchlist.watchlist.indexOf(remove);
+						if (index > -1) {
+						    watchlist.watchlist.splice(index, 1);
+						};
+					};
+				};
+			};
+
+			// Put the object in local storage
+			localStorage.setItem('watchlist', JSON.stringify(watchlist.watchlist));
+
+			// Render the watchlist
+			watchlist.render();
+		},
+		checkSync: function() {
+			// Uncheck all checkboxes
+			var uncheck = document.querySelectorAll('input[type="checkbox"]');
+			for (var j = 0; j < uncheck.length; j++) {
+				uncheck[j].checked = false;
+			};
+
+			// Check all checkboxes of the movies that are in the watchlist array
+			for (var i = 0; i < this.watchlist.length; i++) {
+				var check = document.querySelectorAll('input[value='+this.watchlist[i].imdbID+']');
+				for (var k = 0; k < check.length; k++) {
+					check[k].checked = true;
+				};
+			};
+		},
+		render: function() {
+			// Declare all functions to get data from object
+			var liId = function() {return 'searchLi-'+this.imdbID}
+			var href = function() {return '#detail/'+this.imdbID}
+			var valueId = function() {return this.imdbID}
+			var title = function() {return this.Title}
+			var img = function() {return this.Poster}
+			var year = function() {return this.Year}
+			var checkboxId = function() {return 'checkboxWatchlist-'+this.imdbID}
+
+			// Object to let Transparency know what values to give which element
+			var directives = {
+			  ahref: {href: href},
+			  searchresult: {id: liId, value: valueId},
+			  img: {src: img},
+			  title: {text: title},
+			  year: {text: year},
+			  checkbox: {id: checkboxId, value: valueId},
+			  label: {for: checkboxId}
+			};
+
+			// Render the watchlist
+			Transparency.render(el.listWatchlist, this.watchlist, directives);
+
+			// Link the object to the right checkbox, so we can get the object when we click it
+			var results = this.watchlist;
+			for (var i = 0; i < results.length; i++) {
+				var data = results[i];
+				el.listWatchlist.children[i].querySelector('input[type="checkbox"]').data = data;
+			};
+
+			// Now there are new checkboxes, so new click events should be made, so we fire the init function
+			this.init();		
 		}
 	}
 

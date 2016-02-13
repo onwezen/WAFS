@@ -49,7 +49,19 @@
 	</section>
 
 	<section id="watchlist">
-		
+		<ul id="list-watchlist" class="list">
+			<a data-bind="ahref"> 
+				<li data-bind="searchresult">
+					<img data-bind="img">
+					<div>
+						<h1 data-bind="title"></h1>
+						<span data-bind="year"></span>
+					</div>
+					<input data-bind="checkbox" type="checkbox">
+					<label data-bind="label"></label>
+				</li>
+			</a>
+		</ul>
 	</section>
 
 	<section id="detail">
