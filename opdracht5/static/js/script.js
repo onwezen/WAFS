@@ -193,6 +193,7 @@
 		},
 		render: function() {
 			// Declare all functions to get data from object
+			//Maak hier een functie van die alles laat ophalen voor je
 			var liId = function() {return 'searchLi-'+this.imdbID}
 			var href = function() {return '#detail/'+this.imdbID}
 			var valueId = function() {return this.imdbID}
@@ -271,6 +272,7 @@
 		},
 		render: function() {
 			// Declare all functions to get data from object
+			//Maak hier een functie van die alles laat ophalen voor je
 			var valueId = function() {return this.imdbID}
 			var title = function() {return this.Title}
 			var img = function() {return this.Poster}
